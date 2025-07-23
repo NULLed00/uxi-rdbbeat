@@ -1,4 +1,5 @@
 # pyright: reportAny=false
+import argparse
 import http.client
 import json
 import logging
@@ -18,6 +19,7 @@ AUTOVERSION_PR = os.getenv("AUTOVERSION_PR", "PR VAR NOT SET")
 AUTOVERSION_REPO = os.getenv("AUTOVERSION_REPO", "REPO VAR NOT SET")
 AUTOVERSION_TOML = os.getenv("AUTOVERSION_TOML", "pyproject.toml")
 AUTOVERSION_SLACK_URL = os.getenv("AUTOVERSION_SLACK_URL", "SLACK URL NOT SET")
+PRE_RELEASE = os.getenv("PRE_RELEASE", "") # optional pre-release version, e.g. "5467.0" for 1.0.0-1.1
 
 
 @dataclass
@@ -52,7 +54,7 @@ def _notify(slack_url: str, pr: str, source_repo: str, releases: list[VersionedA
     conn.close()
 
 
-def autoversion(  # noqa: PLR0913
+def _autoversion(  # noqa: PLR0913
     name: str,
     version_file: str,
     version_prefix: str,
@@ -68,11 +70,24 @@ def autoversion(  # noqa: PLR0913
     with pathlib.Path(version_file).open() as vf:
         current_version = vf.read().strip()
     # Build convco command
-    cmd = ["convco", "version", "--bump", "--prefix", version_prefix]
+    cmd = ["convco", "version", "--bump", "--ignore-prereleases", "--prefix", version_prefix]
     for path in watch_paths:
         cmd.extend(["-P", path])
+
+    is_prerelease = len(PRE_RELEASE) > 0
+    if is_prerelease:
+        log.info(f"Using pre-release version: {PRE_RELEASE}")
+        if "." not in PRE_RELEASE:
+            raise ValueError("PRE_RELEASE must be a {PR_NUMBER}.{COUNT} format")
+        pr, count = PRE_RELEASE.split(".")
+        if not pr.isdecimal() or not count.isdecimal():
+            raise ValueError("PRE_RELEASE must be a {PR_NUMBER}.{COUNT} format")
+
     with pathlib.Path(version_file).open("w") as vf:
-        _ = subprocess.run(cmd, check=True, stdout=vf)  # noqa: S603
+        if not is_prerelease:
+            _ = subprocess.run(cmd, check=True, stdout=vf)  # noqa: S603
+        if is_prerelease:
+            _ = vf.write(f"{current_version}-{PRE_RELEASE}\n")
 
     # Read version value
     with pathlib.Path(version_file).open() as vf:
@@ -92,21 +107,24 @@ def autoversion(  # noqa: PLR0913
 
     if not yaml_path or not yaml_key:
         log.info("No YAML path or key provided, skipping YAML update.")
-        _ = subprocess.run(["git", "tag", "-f", "-a", tag, "-m", f"release version: {tag}"], check=True)  # noqa: S603, S607
+        if not is_prerelease:
+            _ = subprocess.run(["git", "tag", "-f", "-a", tag, "-m", f"release version: {tag}"], check=True)  # noqa: S603, S607
         return VersionedAsset(name=name, old_version=current_version, new_version=version_value)
 
     _update_yaml_key(yaml_path, yaml_key, version_value)
     result = subprocess.run(["git", "diff", "--quiet", "HEAD"], check=False)  # noqa: S603, S607
     if result.returncode == 0:
         log.info("No changes detected.")
-        _ = subprocess.run(["git", "tag", "-f", "-a", tag, "-m", f"release version: {tag}"], check=True)  # noqa: S603, S607
+        if not is_prerelease:
+            _ = subprocess.run(["git", "tag", "-f", "-a", tag, "-m", f"release version: {tag}"], check=True)  # noqa: S603, S607
         # No changes
         return None
     log.info("Changes detected. Committing.")
     commit_msg = f"fix: update {name} to {version_value} [skip ci]"
     log.info(commit_msg)
     _ = subprocess.run(["git", "commit", "-am", commit_msg], check=True)  # noqa: S603, S607
-    _ = subprocess.run(["git", "tag", "-f", "-a", tag, "-m", f"release version: {tag}"], check=True)  # noqa: S603, S607
+    if not is_prerelease:
+        _ = subprocess.run(["git", "tag", "-f", "-a", tag, "-m", f"release version: {tag}"], check=True)  # noqa: S603, S607
     return VersionedAsset(name=name, old_version=current_version, new_version=version_value)
 
 
@@ -131,20 +149,10 @@ def _validate_config(conf: dict[str, Any], section: str) -> bool:  # pyright: ig
         return False
     return True
 
-
-def main() -> None:
-    """Entrypoint to autoversion process."""
-    with pathlib.Path(AUTOVERSION_TOML).open("rb") as config_file:
-        config = tomllib.load(config_file)
-    tools = config.get("tool", {})
-    autoversion_config = tools.get("autoversion", {})
-    for section_key, section_value in autoversion_config.items():
-        if not _validate_config(section_value, section_key):
-            sys.exit(1)
-
+def bump_versions(autoversion_config: Any) -> None:
     bumps: list[VersionedAsset] = []
     for name, section_value in autoversion_config.items():
-        versioned_asset = autoversion(
+        versioned_asset = _autoversion(
             name=name,
             version_file=section_value["version_file"],
             version_prefix=section_value["version_prefix"],
@@ -162,6 +170,51 @@ def main() -> None:
         return
     _notify(AUTOVERSION_SLACK_URL, AUTOVERSION_PR, AUTOVERSION_REPO, bumps)
 
+def reset_versions(autoversion_config: Any) -> None:
+    """Reset versions to their original state."""
+    for name, section_value in autoversion_config.items():
+        version_file = section_value["version_file"]
+        version_prefix=section_value["version_prefix"]
+        yaml_path=section_value.get("yaml_path")
+        yaml_key=section_value.get("yaml_key")
+        # Build convco command
+        cmd = ["convco", "version", "--ignore-prereleases", "--prefix", version_prefix]
+        with pathlib.Path(version_file).open("w") as vf:
+            _ = subprocess.run(cmd, check=True, stdout=vf)  # noqa: S603
+        log.info(f"Reset {name} version in {version_file}")
+        # Read version value
+        with pathlib.Path(version_file).open() as vf:
+            version_value = vf.read().strip()
+        if yaml_path and yaml_key:
+            log.info("YAML path or key provided, YAML reset.")
+            _update_yaml_key(yaml_path, yaml_key, version_value)
+
+    result = subprocess.run(["git", "diff", "--quiet", "HEAD"], check=False)  # noqa: S603, S607
+    if result.returncode == 0:
+        log.info("No changes detected.")
+        return
+    commit_msg = f"chore: reset versions [skip ci]"
+    log.info(commit_msg)
+    _ = subprocess.run(["git", "commit", "-am", commit_msg], check=True)  # noqa: S603, S607
+
+def main() -> None:
+    """Entrypoint to autoversion process."""
+    parser = argparse.ArgumentParser(description="Autoversion tool for bumping and resetting versions")
+    _ = parser.add_argument("--reset", action="store_true", help="Reset versions to their original state")
+    args = parser.parse_args()
+
+    with pathlib.Path(AUTOVERSION_TOML).open("rb") as config_file:
+        config = tomllib.load(config_file)
+    tools = config.get("tool", {})
+    autoversion_config = tools.get("autoversion", {})
+    for section_key, section_value in autoversion_config.items():
+        if not _validate_config(section_value, section_key):
+            sys.exit(1)
+
+    if args.reset:
+        reset_versions(autoversion_config)
+    else:
+        bump_versions(autoversion_config)
 
 if __name__ == "__main__":
     main()
