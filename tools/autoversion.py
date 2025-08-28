@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tomllib
@@ -15,12 +16,31 @@ from urllib.parse import urlparse
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("autoversion")
 
-AUTOVERSION_PR = os.getenv("AUTOVERSION_PR", "PR VAR NOT SET")
 AUTOVERSION_REPO = os.getenv("AUTOVERSION_REPO", "REPO VAR NOT SET")
 AUTOVERSION_TOML = os.getenv("AUTOVERSION_TOML", "pyproject.toml")
 AUTOVERSION_SLACK_URL = os.getenv("AUTOVERSION_SLACK_URL", "SLACK URL NOT SET")
 PRE_RELEASE = os.getenv("PRE_RELEASE", "") # optional pre-release version, e.g. "5467.0" for 1.0.0-1.1
 
+# Map of GitHub committer to email
+committer_email_map = {
+    "alistair": "alistair.yan@hpe.com",
+    "ash": "ashton.hudson@hpe.com",
+    "brandon": "brandon.piner@hpe.com",
+    "charl": "charl.cater@hpe.com",
+    "clifton": "clifton.dhanee@hpe.com",
+    "dan": "dan.grout@hpe.com",
+    "deon": "deon.pearson@hpe.com",
+    "evans": "evans.tjabadi@hpe.com",
+    "leonard": "leonard.botha@hpe.com",
+    "madimetja": "madimetja-paul.mmitja@hpe.com",
+    "marais": "marais.kruger@hpe.com",
+    "nj": "njabulo.ndlovu@hpe.com",
+    "olaus": "olaus.cloete@hpe.com",
+    "philip": "philip.winfield@hpe.com",
+    "sias": "sias.mey@hpe.com",
+    "thabo": "thabo.ntsoko@hpe.com",
+    "willem": "willem.nicolaas.viljoen@hpe.com"
+}
 
 @dataclass
 class VersionedAsset:
@@ -33,18 +53,22 @@ class VersionedAsset:
         """Custom str implementation."""
         return f"{self.name}: {self.old_version} -> {self.new_version}"
 
+@dataclass
+class CommitInfo:
+    author: str
+    title: str
+    pr_number: str
 
-def _notify(slack_url: str, pr: str, source_repo: str, releases: list[VersionedAsset]) -> None:
+def _notify(email: str, pr_number: str, releases: list[VersionedAsset]) -> None:
     release_txt = "\n".join([str(release) for release in releases])
 
-    url = slack_url
     payload = {
-        "pr": pr,
-        "source-repo": source_repo,
+        "pr": f"https://github.com/{AUTOVERSION_REPO}/pull/{pr_number}",
+        "source-repo": AUTOVERSION_REPO,
         "releases": release_txt,
+        "email": email
     }
-
-    parsed = urlparse(url)
+    parsed = urlparse(AUTOVERSION_SLACK_URL)
     conn = http.client.HTTPSConnection(parsed.netloc)
     headers = {"Content-Type": "application/json"}
     conn.request("POST", parsed.path, body=json.dumps(payload), headers=headers)
@@ -149,7 +173,23 @@ def _validate_config(conf: dict[str, Any], section: str) -> bool:  # pyright: ig
         return False
     return True
 
+def _get_committer_email(commit_info: CommitInfo) -> str:
+    # Find matching email based on author
+    email = "brandon.piner@hpe.com"
+    for committer, mapped_email in committer_email_map.items():
+        if committer in commit_info.author.lower():
+            email = mapped_email
+            break
+    if not email:
+        log.warning("No mapped email found. for %s", commit_info.author)
+    return email
+
 def bump_versions(autoversion_config: Any) -> None:
+    commit_info = extract_commit_info()
+    log.info("Commit Info: %s", commit_info)
+    email = _get_committer_email(commit_info)
+    log.info("Mapped Email: %s", email)
+
     bumps: list[VersionedAsset] = []
     for name, section_value in autoversion_config.items():
         versioned_asset = _autoversion(
@@ -168,7 +208,7 @@ def bump_versions(autoversion_config: Any) -> None:
     if len(bumps) == 0:
         log.info("No version bumps detected.")
         return
-    _notify(AUTOVERSION_SLACK_URL, AUTOVERSION_PR, AUTOVERSION_REPO, bumps)
+    _notify(email=email, pr_number=commit_info.pr_number, releases=bumps)
 
 def reset_versions(autoversion_config: Any) -> None:
     """Reset versions to their original state."""
@@ -196,6 +236,45 @@ def reset_versions(autoversion_config: Any) -> None:
     commit_msg = f"chore: reset versions [skip ci]"
     log.info(commit_msg)
     _ = subprocess.run(["git", "commit", "-am", commit_msg], check=True)  # noqa: S603, S607
+
+def extract_commit_info() -> CommitInfo:
+    """Extract commit information from git show --pretty=medium output."""
+    result = subprocess.run(
+        ["git", "show", "--pretty=medium"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    lines = result.stdout.split('\n')
+
+    author = ""
+    title = ""
+    pr_number = "0"
+
+    # Find author line
+    for line in lines:
+        if line.startswith("Author:"):
+            author = line.replace("Author:", "").strip()
+            break
+
+    # Find title (after Date: line and before diff)
+    date_found = False
+    for line in lines:
+        if line.startswith("Date:"):
+            date_found = True
+            continue
+        if date_found and line.strip() and not line.startswith("diff"):
+            title = line.strip()
+            break
+
+    # Extract PR number from title using regex
+    if title:
+        match = re.search(r'#(\d+)\)', title)
+        if match:
+            pr_number = match.group(1)
+
+    return CommitInfo(author=author, title=title, pr_number=pr_number)
 
 def main() -> None:
     """Entrypoint to autoversion process."""
