@@ -1,0 +1,47 @@
+line-length = 100
+target-version = "py311"                   # needs to match repo otherwise it will suggest things like @override before they exist
+namespace-packages = ["integration_tests"] # needs to be adjusted for repo
+
+exclude = [
+  "venv",
+  ".venv",
+  "tools",
+  "cli/db_migrations/versions",
+] # needs to be adjusted for repo
+
+[lint]
+select = ["ALL"]
+ignore = [
+  "COM812", # missing trailing comma - formatter resolves
+  "COM819", # unwanted trailing comma - formatter resolves
+  "D100",   # undocumented module - docstring in each .py file
+  "D101",   # undocumented class - docstring in class
+  "D104",   # undocumented package - docstring in __init__.py
+  "D206",   # tab indented docstring - formatter resolves
+  "D300",   # ''' for docstrings - formatter resolves
+  "E101",   # mixed indentation tabs/spaces - formatter resolves
+  "E111",   # non multiple of 4 indentation - formatter resolves
+  "E114",   # comment at non 4 indentation - formatter resolves
+  "E117",   # over indented code block - formatter resolves
+  "E501",   # lines over 100 columns - formatter usually fixes, and in the cases it cant, the lines usually need to be ignored
+  "W191",   # tab indentation - formatter resolves to spaces
+  "Q000",   # ' in inline str - formatter resolves
+  "Q001",   # ''' in inline str - formatter resolves
+  "Q002",   # ''' in docstring - formatter resolves
+  "Q003",   # avoidable escaped quote - formatter resolves
+  "ISC001", # implicit str concat - this should be included I think...
+  "RET504", # unnecessary-assign before return - value can be returned directly, preference is that it doesnt matter
+  "FIX002", # line-contains-todo - we do use todo comments for issue tracking in code
+]
+
+[lint.per-file-ignores]
+"**/test*.py" = [
+  "S101", # assert statements - expected in pytest tests
+  "S105", # hardcoded password strings - expected in tests
+  "S113", # http request without timeout - ok for tests
+  "D102", # undocumented public method - test names should document tests, no docstrings required
+  "D103", # undocumented public function - test names should document tests, no docstrings required
+]
+
+[lint.pydocstyle]
+convention = "google"
