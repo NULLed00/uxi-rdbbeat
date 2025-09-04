@@ -1,0 +1,9 @@
+{
+  "exclude": [
+    ".venv",
+    "venv",
+    "tools",
+    "cli/db_migrations/versions/*"
+  ],
+  "enableTypeIgnoreComments": true
+}
