@@ -1,0 +1,10 @@
+extends: default
+ignore: |
+  /.github/
+  /venv*/
+  /charts/*/templates/
+rules:
+  comments:
+    min-spaces-from-content: 1
+  document-start: disable
+  line-length: false
