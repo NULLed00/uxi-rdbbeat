@@ -19,17 +19,17 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
+# from myapp import mymodel  # noqa: ERA001
+# target_metadata = mymodel.Base.metadata  # noqa: ERA001
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
+# my_important_option = config.get_main_option("my_important_option")  # noqa: ERA001
 # ... etc.
 
 
-def run_migrations_offline():
+def run_migrations_offline():  # noqa: ANN201
     """Run migrations in 'offline' mode.
     This configures the context with just a URL
     and not an Engine, though an Engine is acceptable
@@ -37,7 +37,7 @@ def run_migrations_offline():
     we don't even need a DBAPI to be available.
     Calls to context.execute() here emit the given string to the
     script output.
-    """
+    """  # noqa: D205
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -50,11 +50,11 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online():  # noqa: ANN201
     """Run migrations in 'online' mode.
     In this scenario we need to create an Engine
     and associate a connection with the context.
-    """
+    """  # noqa: D205
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",

@@ -1,20 +1,12 @@
 # lint
-black
-flake8
-flynt
-isort
+basedpyright
+ruff
 yamllint
-
-# mypy
-mypy
-types-mock
-types-pytz
-sqlalchemy_utils
 
 # testing
 pytest
 coverage
 mock
+sqlalchemy_utils
 
 # version
-bumpversion

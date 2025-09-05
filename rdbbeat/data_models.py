@@ -13,48 +13,48 @@ class Schedule(BaseModel):
     timezone: str = "UTC"
 
     @validator("minute")
-    def minute_validation(cls, v: str) -> str:
-        if "*" == v:
+    def minute_validation(cls, v: str) -> str:  # noqa: D102, N805
+        if v == "*":
             return v
-        elif not v.isdigit():
-            raise ValueError(f"Minute: '{v}' is not a valid int")
-        assert int(v) >= 0 and int(v) < 60, "Minute value must range between 0 and 59"
+        if not v.isdigit():
+            raise ValueError(f"Minute: '{v}' is not a valid int")  # noqa: EM102, TRY003
+        assert int(v) >= 0 and int(v) < 60, "Minute value must range between 0 and 59"  # noqa: PLR2004, PT018, S101
         return v
 
     @validator("hour")
-    def hour_validation(cls, v: str) -> str:
-        if "*" == v:
+    def hour_validation(cls, v: str) -> str:  # noqa: D102, N805
+        if v == "*":
             return v
-        elif not v.isdigit():
-            raise ValueError(f"Hour: '{v}' is not a valid int")
-        assert int(v) >= 0 and int(v) < 24, "Hour value must range between 0 and 23"
+        if not v.isdigit():
+            raise ValueError(f"Hour: '{v}' is not a valid int")  # noqa: EM102, TRY003
+        assert int(v) >= 0 and int(v) < 24, "Hour value must range between 0 and 23"  # noqa: PLR2004, PT018, S101
         return v
 
     @validator("day_of_week")
-    def day_of_week_validation(cls, v: str) -> str:
-        if "*" == v:
+    def day_of_week_validation(cls, v: str) -> str:  # noqa: D102, N805
+        if v == "*":
             return v
-        elif not v.isdigit():
-            raise ValueError(f"Day of week: '{v}' is not a valid int")
-        assert int(v) >= 0 and int(v) < 7, "Day of the week value must range between 0 and 6"
+        if not v.isdigit():
+            raise ValueError(f"Day of week: '{v}' is not a valid int")  # noqa: EM102, TRY003
+        assert int(v) >= 0 and int(v) < 7, "Day of the week value must range between 0 and 6"  # noqa: PLR2004, PT018, S101
         return v
 
     @validator("day_of_month")
-    def day_of_month_validation(cls, v: str) -> str:
-        if "*" == v:
+    def day_of_month_validation(cls, v: str) -> str:  # noqa: D102, N805
+        if v == "*":
             return v
-        elif not v.isdigit():
-            raise ValueError(f"Day of month: '{v}' is not a valid int")
-        assert int(v) > 0 and int(v) < 32, "Day of the month value must range between 1 and 31"
+        if not v.isdigit():
+            raise ValueError(f"Day of month: '{v}' is not a valid int")  # noqa: EM102, TRY003
+        assert int(v) > 0 and int(v) < 32, "Day of the month value must range between 1 and 31"  # noqa: PLR2004, PT018, S101
         return v
 
     @validator("month_of_year")
-    def month_of_year_validation(cls, v: str) -> str:
-        if "*" == v:
+    def month_of_year_validation(cls, v: str) -> str:  # noqa: D102, N805
+        if v == "*":
             return v
-        elif not v.isdigit():
-            raise ValueError(f"Month: '{v}' is not a valid int")
-        assert int(v) > 0 and int(v) < 13, "Month of year value must range between 0 and 12"
+        if not v.isdigit():
+            raise ValueError(f"Month: '{v}' is not a valid int")  # noqa: EM102, TRY003
+        assert int(v) > 0 and int(v) < 13, "Month of year value must range between 0 and 12"  # noqa: PLR2004, PT018, S101
         return v
 
 

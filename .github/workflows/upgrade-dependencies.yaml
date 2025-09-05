@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ssh-key: ${{ secrets.PR_BOT }}
 
@@ -33,13 +33,7 @@ jobs:
             ${{ runner.os }}-uv-
 
       - name: Setup Just
-        uses: extractions/setup-just@v2
-
-      - name: Setup Fury Repository
-        uses: extractions/netrc@v2
-        with:
-          machine: pypi.fury.io
-          username: ${{ secrets.FURY_AUTH_PULL }}
+        uses: extractions/setup-just@v3
 
       - name: Install Dependencies
         run: just setup-dev

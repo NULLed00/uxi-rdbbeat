@@ -10,13 +10,13 @@ import pytz
 from celery import Celery, schedules
 from sqlalchemy_utils import TimezoneType
 
-schedstate = namedtuple("schedstate", ("is_due", "next"))
+schedstate = namedtuple("schedstate", ("is_due", "next"))  # noqa: PYI024
 
 
-class TzAwareCrontab(schedules.crontab):
+class TzAwareCrontab(schedules.crontab):  # noqa: PLW1641
     """Timezone Aware Crontab."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         minute: str = "*",
         hour: str = "*",
@@ -31,19 +31,19 @@ class TzAwareCrontab(schedules.crontab):
 
         nowfun = self.nowfunc
 
-        super(TzAwareCrontab, self).__init__(
+        super(TzAwareCrontab, self).__init__(  # noqa: UP008
             minute=minute,
             hour=hour,
             day_of_week=day_of_week,
             day_of_month=day_of_month,
             month_of_year=month_of_year,
-            # tz=tz,
+            # tz=tz,  # noqa: ERA001
             nowfun=nowfun,
             app=app,
         )
 
-    def nowfunc(self) -> datetime:
-        return self.tz.normalize(pytz.utc.localize(dt.datetime.utcnow()))
+    def nowfunc(self) -> datetime:  # noqa: D102
+        return self.tz.normalize(pytz.utc.localize(dt.datetime.utcnow()))  # noqa: DTZ003
 
     def is_due(self, last_run_at: datetime) -> schedstate:
         """Calculate when the next run will take place.
@@ -64,14 +64,14 @@ class TzAwareCrontab(schedules.crontab):
         return schedstate(due, rem)
 
     # Needed to support pickling
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105
         return (
             f"<crontab: {self._orig_minute} {self._orig_hour} "
             f"{self._orig_day_of_week} {self._orig_day_of_month} "
             f"{self._orig_month_of_year} (m/h/d/dM/MY), {self.tz}>"
         )
 
-    def __reduce__(self) -> schedules.crontab:
+    def __reduce__(self) -> schedules.crontab:  # noqa: D105
         return (
             self.__class__,
             (
@@ -85,7 +85,7 @@ class TzAwareCrontab(schedules.crontab):
             None,
         )
 
-    def __eq__(self, other: schedules.crontab) -> bool:
+    def __eq__(self, other: schedules.crontab) -> bool:  # noqa: D105
         if isinstance(other, schedules.crontab):
             return (
                 other.month_of_year == self.month_of_year

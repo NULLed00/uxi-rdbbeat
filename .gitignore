@@ -99,6 +99,3 @@ python-packages
 # helm
 charts/**/*Chart.lock
 charts/**/*.tgz
-
-# requirements
-dev-requirements.txt

@@ -4,7 +4,7 @@ from rdbbeat.db.models import CrontabSchedule, PeriodicTask
 
 
 @pytest.fixture
-def scheduled_task():
+def scheduled_task():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "00",
@@ -23,7 +23,7 @@ def scheduled_task():
 
 
 @pytest.fixture
-def scheduled_task_db_object(scheduled_task):
+def scheduled_task_db_object(scheduled_task):  # noqa: ANN001, ANN201
     task = PeriodicTask(
         crontab=CrontabSchedule(**scheduled_task["schedule"]),
         name=scheduled_task["name"],

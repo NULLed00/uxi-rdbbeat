@@ -2,9 +2,5 @@
 # MIT License
 
 
-class PeriodicTaskNotFound(Exception):
-    """
-    Raised when a periodic task is not found in the database.
-    """
-
-    pass
+class PeriodicTaskNotFound(Exception):  # noqa: N818
+    """Raised when a periodic task is not found in the database."""

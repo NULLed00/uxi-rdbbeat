@@ -2,7 +2,7 @@
 # MIT License
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from rdbbeat.db.models import CrontabSchedule, PeriodicTask
 from rdbbeat.exceptions import PeriodicTaskNotFound
 
 
-def get_crontab_schedule(session: Session, schedule: Schedule) -> CrontabSchedule:
+def get_crontab_schedule(session: Session, schedule: Schedule) -> CrontabSchedule:  # noqa: D103
     crontab = (
         session.query(CrontabSchedule)
         .where(
@@ -34,14 +34,12 @@ def get_crontab_schedule(session: Session, schedule: Schedule) -> CrontabSchedul
 def schedule_task(
     session: Session,
     scheduled_task: ScheduledTask,
-    queue: Optional[str] = None,
-    exchange: Optional[str] = None,
-    routing_key: Optional[str] = None,
-    **kwargs: Any,
+    queue: str | None = None,
+    exchange: str | None = None,
+    routing_key: str | None = None,
+    **kwargs: Any,  # noqa: ANN401
 ) -> PeriodicTask:
-    """
-    Schedule a task by adding a periodic task entry.
-    """
+    """Schedule a task by adding a periodic task entry."""
     crontab = get_crontab_schedule(session=session, schedule=scheduled_task.schedule)
     task = PeriodicTask(
         crontab=crontab,
@@ -59,19 +57,17 @@ def schedule_task(
 
 def update_task_enabled_status(
     session: Session,
-    enabled_status: bool,
+    enabled_status: bool,  # noqa: FBT001
     periodic_task_id: int,
 ) -> PeriodicTask:
-    """
-    Update task enabled status (if task is enabled or disabled).
-    """
+    """Update task enabled status (if task is enabled or disabled)."""
     try:
         task = session.query(PeriodicTask).filter(PeriodicTask.id == periodic_task_id).one()
         task.enabled = enabled_status  # type: ignore [assignment]
         session.add(task)
 
     except NoResultFound as e:
-        raise PeriodicTaskNotFound() from e
+        raise PeriodicTaskNotFound() from e  # noqa: RSE102
 
     return task
 
@@ -81,9 +77,7 @@ def update_task(
     scheduled_task: ScheduledTask,
     periodic_task_id: int,
 ) -> PeriodicTask:
-    """
-    Update the details of a task including the crontab schedule
-    """
+    """Update the details of a task including the crontab schedule"""  # noqa: D415
     try:
         task = session.query(PeriodicTask).filter(PeriodicTask.id == periodic_task_id).one()
 
@@ -93,23 +87,23 @@ def update_task(
         session.add(task)
 
     except NoResultFound as e:
-        raise PeriodicTaskNotFound() from e
+        raise PeriodicTaskNotFound() from e  # noqa: RSE102
 
     return task
 
 
-def is_crontab_used(session: Session, crontab_schedule: CrontabSchedule) -> bool:
+def is_crontab_used(session: Session, crontab_schedule: CrontabSchedule) -> bool:  # noqa: D103
     schedules = session.query(PeriodicTask).filter_by(crontab=crontab_schedule).all()
-    return True if schedules else False
+    return True if schedules else False  # noqa: SIM210
 
 
-def delete_task(session: Session, periodic_task_id: int) -> PeriodicTask:
+def delete_task(session: Session, periodic_task_id: int) -> PeriodicTask:  # noqa: D103
     try:
         task = session.query(PeriodicTask).where(PeriodicTask.id == periodic_task_id).one()
         session.delete(task)
         session.flush()
         if not is_crontab_used(session, task.crontab):
             session.delete(task.crontab)
-        return task
+        return task  # noqa: TRY300
     except NoResultFound as e:
-        raise PeriodicTaskNotFound() from e
+        raise PeriodicTaskNotFound() from e  # noqa: RSE102

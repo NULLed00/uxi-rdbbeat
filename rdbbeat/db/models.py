@@ -4,7 +4,7 @@
 
 import datetime as dt
 import logging
-from typing import Any, Dict, Union
+from typing import Any
 
 import pytz
 import sqlalchemy as sa
@@ -24,15 +24,15 @@ Base: Any = declarative_base(metadata=MetaData(schema="scheduler"))
 
 def cronexp(field: str) -> str:
     """Representation of cron expression."""
-    return field and str(field).replace(" ", "") or "*"
+    return (field and str(field).replace(" ", "")) or "*"
 
 
 class ModelMixin:
     @classmethod
-    def create(cls, **kw: Dict) -> "ModelMixin":
+    def create(cls, **kw: dict) -> "ModelMixin":  # noqa: D102
         return cls(**kw)
 
-    def update(self, **kw: Dict) -> "ModelMixin":
+    def update(self, **kw: dict) -> "ModelMixin":  # noqa: D102
         for attr, value in kw.items():
             setattr(self, attr, value)
         return self
@@ -50,7 +50,7 @@ class CrontabSchedule(Base, ModelMixin):
     timezone = sa.Column(sa.String(64), default="UTC")
 
     @property
-    def schedule(self) -> TzAwareCrontab:
+    def schedule(self) -> TzAwareCrontab:  # noqa: D102
         return TzAwareCrontab(
             minute=str(self.minute),
             hour=str(self.hour),
@@ -61,13 +61,13 @@ class CrontabSchedule(Base, ModelMixin):
         )
 
     @classmethod
-    def from_schedule(cls, session: Session, schedule: schedules.crontab) -> "CrontabSchedule":
+    def from_schedule(cls, session: Session, schedule: schedules.crontab) -> "CrontabSchedule":  # noqa: D102
         spec = {
-            "minute": schedule._orig_minute,
-            "hour": schedule._orig_hour,
-            "day_of_week": schedule._orig_day_of_week,
-            "day_of_month": schedule._orig_day_of_month,
-            "month_of_year": schedule._orig_month_of_year,
+            "minute": schedule._orig_minute,  # noqa: SLF001
+            "hour": schedule._orig_hour,  # noqa: SLF001
+            "day_of_week": schedule._orig_day_of_week,  # noqa: SLF001
+            "day_of_month": schedule._orig_day_of_month,  # noqa: SLF001
+            "month_of_year": schedule._orig_month_of_year,  # noqa: SLF001
         }
         if schedule.tz:
             spec.update({"timezone": schedule.tz.zone})
@@ -90,37 +90,35 @@ class PeriodicTaskChanged(Base, ModelMixin):
 
     @classmethod
     def changed(cls, mapper: Mapper, connection: Connection, target: "PeriodicTask") -> None:
-        """
-        :param mapper: the Mapper which is the target of this event
+        """:param mapper: the Mapper which is the target of this event
         :param connection: the Connection being used
         :param target: the mapped instance being persisted
-        """
+        """  # noqa: D205
         if not target.no_changes:
             cls.update_changed(mapper, connection, target)
 
     @classmethod
-    def update_changed(cls, mapper: Mapper, connection: Connection, target: "PeriodicTask") -> None:
-        """
-        :param mapper: the Mapper which is the target of this event
+    def update_changed(cls, mapper: Mapper, connection: Connection, target: "PeriodicTask") -> None:  # noqa: ARG003
+        """:param mapper: the Mapper which is the target of this event
         :param connection: the Connection being used
         :param target: the mapped instance being persisted
-        """
+        """  # noqa: D205
         s = connection.execute(
             select(PeriodicTaskChanged).where(PeriodicTaskChanged.id == 1).limit(1)
         )
         if not s:
             s = connection.execute(
-                insert(PeriodicTaskChanged).values(last_update=dt.datetime.now())
+                insert(PeriodicTaskChanged).values(last_update=dt.datetime.now())  # noqa: DTZ005
             )
         else:
             s = connection.execute(
                 update(PeriodicTaskChanged)
                 .where(PeriodicTaskChanged.id == 1)
-                .values(last_update=dt.datetime.now())
+                .values(last_update=dt.datetime.now())  # noqa: DTZ005
             )
 
     @classmethod
-    def last_change(cls, session: Session) -> Union[dt.datetime, None]:
+    def last_change(cls, session: Session) -> dt.datetime | None:  # noqa: D102
         periodic_tasks = session.query(PeriodicTaskChanged).get(1)
         if periodic_tasks:
             return periodic_tasks.last_update
@@ -167,7 +165,7 @@ class PeriodicTask(Base, ModelMixin):
     no_changes = False
 
     @property
-    def task_name(self) -> str:
+    def task_name(self) -> str:  # noqa: D102
         return str(self.task)
 
     @task_name.setter
@@ -175,10 +173,10 @@ class PeriodicTask(Base, ModelMixin):
         self.task = value  # type: ignore [assignment]
 
     @property
-    def schedule(self) -> schedules.schedule:
+    def schedule(self) -> schedules.schedule:  # noqa: D102
         if self.crontab:
             return self.crontab.schedule
-        raise ValueError(f"{self.name} schedule is None!")
+        raise ValueError(f"{self.name} schedule is None!")  # noqa: EM102, TRY003
 
 
 listen(PeriodicTask, "after_insert", PeriodicTaskChanged.update_changed)

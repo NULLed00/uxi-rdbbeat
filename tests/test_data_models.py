@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from rdbbeat.data_models import Schedule
 
 
-def test_schedule_pass():
+def test_schedule_pass():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "00",
@@ -15,7 +15,7 @@ def test_schedule_pass():
     Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_minute_type():
+def test_schedule_invalid_minute_type():  # noqa: ANN201
     schedule = {
         "minute": "minute",
         "hour": "00",
@@ -27,7 +27,7 @@ def test_schedule_invalid_minute_type():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_minute():
+def test_schedule_invalid_minute():  # noqa: ANN201
     schedule = {
         "minute": "200",
         "hour": "00",
@@ -39,7 +39,7 @@ def test_schedule_invalid_minute():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_hour_type():
+def test_schedule_invalid_hour_type():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "h",
@@ -51,7 +51,7 @@ def test_schedule_invalid_hour_type():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_hour():
+def test_schedule_invalid_hour():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "0055",
@@ -63,7 +63,7 @@ def test_schedule_invalid_hour():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_day_of_week_type():
+def test_schedule_invalid_day_of_week_type():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "00",
@@ -75,7 +75,7 @@ def test_schedule_invalid_day_of_week_type():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_day_of_week():
+def test_schedule_invalid_day_of_week():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "0055",
@@ -87,7 +87,7 @@ def test_schedule_invalid_day_of_week():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_day_of_month_type():
+def test_schedule_invalid_day_of_month_type():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "00",
@@ -99,7 +99,7 @@ def test_schedule_invalid_day_of_month_type():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_day_of_month():
+def test_schedule_invalid_day_of_month():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "0055",
@@ -111,7 +111,7 @@ def test_schedule_invalid_day_of_month():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_month_type():
+def test_schedule_invalid_month_type():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "00",
@@ -123,7 +123,7 @@ def test_schedule_invalid_month_type():
         Schedule.parse_obj(schedule)
 
 
-def test_schedule_invalid_month():
+def test_schedule_invalid_month():  # noqa: ANN201
     schedule = {
         "minute": "23",
         "hour": "0055",

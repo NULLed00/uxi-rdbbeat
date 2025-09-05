@@ -1,16 +1,9 @@
-"""
-    :license: MIT, see LICENSE for more details.
-"""
+""":license: MIT, see LICENSE for more details."""
 
 from setuptools import find_packages, setup
 
 setup(
-    name="rdbbeat",
-    python_requires=">=3.8",
-    author="Aruba UXI",
-    version="0.2.1",
-    description="A SQLAlchemy-based scheduler for celery-beat",
-    long_description=open("README.md").read(),
+    long_description=open("README.md").read(),  # noqa: PTH123, SIM115
     long_description_content_type="text/markdown",
     license="MIT",
     classifiers=[
@@ -26,12 +19,4 @@ setup(
     package_data={"rdbbeat": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        "celery~=5.2",
-        "sqlalchemy",
-        "alembic",
-        "pydantic",
-        "python-dotenv",
-        "pytz",
-    ],
 )

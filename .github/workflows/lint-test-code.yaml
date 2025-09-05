@@ -8,18 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
       - name: Setup Just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v3
 
       - name: Install Dependencies
-        run: just setup-dev
+        run: |
+          just setup-python
+          just setup-dev
 
       - name: Run Code Linting Test
         run: just lint
