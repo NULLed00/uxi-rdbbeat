@@ -34,9 +34,7 @@ def get_crontab_schedule(session: Session, schedule: Schedule) -> CrontabSchedul
 def schedule_task(
     session: Session,
     scheduled_task: ScheduledTask,
-    queue: str | None = None,
-    exchange: str | None = None,
-    routing_key: str | None = None,
+    celery_options: dict = None,
     **kwargs: Any,  # noqa: ANN401
 ) -> PeriodicTask:
     """Schedule a task by adding a periodic task entry."""
@@ -46,9 +44,7 @@ def schedule_task(
         name=scheduled_task.name,
         task=scheduled_task.task,
         kwargs=json.dumps(kwargs),
-        queue=queue,
-        exchange=exchange,
-        routing_key=routing_key,
+        celery_options=celery_options,
     )
     session.add(task)
 
@@ -74,16 +70,22 @@ def update_task_enabled_status(
 
 def update_task(
     session: Session,
-    scheduled_task: ScheduledTask,
     periodic_task_id: int,
+    scheduled_task: ScheduledTask = None,
+    celery_options: dict = {}
 ) -> PeriodicTask:
     """Update the details of a task including the crontab schedule"""  # noqa: D415
     try:
         task = session.query(PeriodicTask).filter(PeriodicTask.id == periodic_task_id).one()
 
-        task.crontab = get_crontab_schedule(session, scheduled_task.schedule)
-        task.name = scheduled_task.name  # type: ignore [assignment]
-        task.task = scheduled_task.task  # type: ignore [assignment]
+        if scheduled_task:
+            task.crontab = get_crontab_schedule(session, scheduled_task.schedule)
+            task.name = scheduled_task.name  # type: ignore [assignment]
+            task.task = scheduled_task.task  # type: ignore [assignment]
+
+        if celery_options:
+            task.update_celery_options(celery_options)
+
         session.add(task)
 
     except NoResultFound as e:
