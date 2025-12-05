@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Hewlett Packard Enterprise Development LP
 # MIT License
 
+import json
 import datetime as dt
 import logging
 from typing import Any
@@ -9,6 +10,7 @@ from typing import Any
 import pytz
 import sqlalchemy as sa
 from celery import schedules
+from pydantic import validator
 from sqlalchemy import MetaData, func
 from sqlalchemy.engine import Connection
 from sqlalchemy.event import listen
@@ -70,7 +72,7 @@ class CrontabSchedule(Base, ModelMixin):
             "month_of_year": schedule._orig_month_of_year,  # noqa: SLF001
         }
         if schedule.tz:
-            spec.update({"timezone": schedule.tz.zone})
+            spec.update({"timezone": schedule.tz.key})
         model = session.query(CrontabSchedule).filter_by(**spec).first()
         if not model:
             model = cls(**spec)
@@ -143,17 +145,23 @@ class PeriodicTask(Base, ModelMixin):
 
     args = sa.Column(sa.Text(), default="[]")
     kwargs = sa.Column(sa.Text(), default="{}")
+    
+    ###############################################
     # queue for celery
-    queue = sa.Column(sa.String(255))
-    # exchange for celery
-    exchange = sa.Column(sa.String(255))
-    # routing_key for celery
-    routing_key = sa.Column(sa.String(255))
-    priority = sa.Column(sa.Integer())
-    expires = sa.Column(sa.DateTime(timezone=True))
+    # queue = sa.Column(sa.String(255))
+    # # exchange for celery
+    # exchange = sa.Column(sa.String(255))
+    # # routing_key for celery
+    # routing_key = sa.Column(sa.String(255))
+    # priority = sa.Column(sa.Integer())
+    # expires = sa.Column(sa.DateTime(timezone=True))
+    #one_off: sa.Column = sa.Column(sa.Boolean(), default=False)
+    # Replaced with
+    celery_options = sa.Column(sa.Text(), default="{}")
+    ################################################
+
 
     # Execute only once
-    one_off: sa.Column = sa.Column(sa.Boolean(), default=False)
     start_time = sa.Column(sa.DateTime(timezone=True))
     enabled: sa.Column = sa.Column(sa.Boolean(), default=True)
     last_run_at = sa.Column(sa.DateTime(timezone=True))
@@ -177,6 +185,66 @@ class PeriodicTask(Base, ModelMixin):
         if self.crontab:
             return self.crontab.schedule
         raise ValueError(f"{self.name} schedule is None!")  # noqa: EM102, TRY003
+
+
+    @validator('celery_options')
+    def options_validation(self, options:dict)-> str:
+
+        if expires := options.get('expires'):
+
+            if isinstance(expires, int):
+                # Use TZ aware now() function instead
+                expires = dt.datetime.now() + dt.timedelta(seconds=expires)  # noqa: DTZ003
+            elif isinstance(expires, dt.datetime):
+                pass
+            else:
+                raise ValueError("options.expires value error")  # noqa: EM101, TRY003
+
+            # Serialize as timestamp
+            options["expires"] = expires.timestamp()
+
+        try:
+            return json.dumps(options)
+
+        except json.decoder.JSONDecodeError:
+            return '{}'
+
+    @property
+    def one_off(self):
+        """
+        Since one_off is now included in celery_options we need to create a property as if it were a column
+        """
+
+        # By default tasks are not a one off occurence
+        return self.celery_options.get('one_off', False)
+
+    @property
+    def options(self):
+
+        try:
+            options = json.loads(self.celery_options)
+
+            if expires:= options.get('expires'):
+                options['expires'] = dt.date.fromtimestamp(expires)
+
+            return options
+
+        except json.decoder.JSONDecodeError:
+            return {}
+
+    def update_celery_options(self, new_options):
+
+        # Deserialize the original options
+        original_options = self.options
+
+        # Add/change the options
+        for key, value in new_options.items():
+            original_options[key] = value
+
+        # Re-serialize and save
+        self.celery_options = original_options
+
+
 
 
 listen(PeriodicTask, "after_insert", PeriodicTaskChanged.update_changed)
