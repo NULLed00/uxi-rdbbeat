@@ -192,7 +192,7 @@ class PeriodicTask(Base, ModelMixin):
     def celery_options(self):
 
         try:
-            options = json.loads(self.celery_options)
+            options = json.loads(self._celery_options)
 
             if expires:= options.get('expires'):
                 options['expires'] = dt.date.fromtimestamp(expires)
