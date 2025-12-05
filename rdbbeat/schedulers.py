@@ -67,7 +67,7 @@ class ModelEntry(ScheduleEntry):
         #     self.options[option] = value
 
         # Replaced with:
-        self.options = model.options
+        self.options = model.celery_options
         # This is not a valid celery task option but
         # is included to avoid breaking everything
         self.options.pop('one_off', None)

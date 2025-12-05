@@ -14,6 +14,7 @@ from pydantic import validator
 from sqlalchemy import MetaData, func
 from sqlalchemy.engine import Connection
 from sqlalchemy.event import listen
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapper, Session, declarative_base, foreign, relationship, remote
 from sqlalchemy.sql import insert, select, update
 
@@ -157,7 +158,7 @@ class PeriodicTask(Base, ModelMixin):
     # expires = sa.Column(sa.DateTime(timezone=True))
     #one_off: sa.Column = sa.Column(sa.Boolean(), default=False)
     # Replaced with
-    celery_options = sa.Column(sa.Text(), default="{}")
+    _celery_options = sa.Column(sa.Text(), default="{}")
     ################################################
 
 
@@ -187,8 +188,22 @@ class PeriodicTask(Base, ModelMixin):
         raise ValueError(f"{self.name} schedule is None!")  # noqa: EM102, TRY003
 
 
-    @validator('celery_options')
-    def options_validation(self, options:dict)-> str:
+    @hybrid_property
+    def celery_options(self):
+
+        try:
+            options = json.loads(self.celery_options)
+
+            if expires:= options.get('expires'):
+                options['expires'] = dt.date.fromtimestamp(expires)
+
+            return options
+
+        except json.decoder.JSONDecodeError:
+            return {}
+
+    @celery_options.setter
+    def celery_options(self, options:dict)-> str:
 
         if expires := options.get('expires'):
 
@@ -204,10 +219,10 @@ class PeriodicTask(Base, ModelMixin):
             options["expires"] = expires.timestamp()
 
         try:
-            return json.dumps(options)
+            self._celery_options = json.dumps(options)
 
         except json.decoder.JSONDecodeError:
-            return '{}'
+            self._celery_options = '{}'
 
     @property
     def one_off(self):
@@ -218,24 +233,11 @@ class PeriodicTask(Base, ModelMixin):
         # By default tasks are not a one off occurence
         return self.celery_options.get('one_off', False)
 
-    @property
-    def options(self):
-
-        try:
-            options = json.loads(self.celery_options)
-
-            if expires:= options.get('expires'):
-                options['expires'] = dt.date.fromtimestamp(expires)
-
-            return options
-
-        except json.decoder.JSONDecodeError:
-            return {}
 
     def update_celery_options(self, new_options):
 
         # Deserialize the original options
-        original_options = self.options
+        original_options = self.celery_options
 
         # Add/change the options
         for key, value in new_options.items():

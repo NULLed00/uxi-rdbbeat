@@ -42,7 +42,7 @@ def upgrade():  # noqa: ANN201, D103
         sa.Column("crontab_id", sa.Integer(), nullable=True),
         sa.Column("args", sa.Text(), nullable=True),
         sa.Column("kwargs", sa.Text(), nullable=True),
-        sa.Column("celery_options", sa.Text(), nullable=True),
+        sa.Column("_celery_options", sa.Text(), nullable=True),
         # sa.Column("queue", sa.String(length=255), nullable=True),
         # sa.Column("exchange", sa.String(length=255), nullable=True),
         # sa.Column("routing_key", sa.String(length=255), nullable=True),
