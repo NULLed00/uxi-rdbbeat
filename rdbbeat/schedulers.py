@@ -58,12 +58,20 @@ class ModelEntry(ScheduleEntry):
 
         logger.debug(f"schedule: {self.schedule}")  # noqa: G004
 
-        self.options = {}
-        for option in ["queue", "exchange", "routing_key", "expires", "priority"]:
-            value = getattr(model, option)
-            if value is None:
-                continue
-            self.options[option] = value
+        ##############################
+        # self.options = {}
+        # for option in ["queue", "exchange", "routing_key", "expires", "priority"]:
+        #     value = getattr(model, option)
+        #     if value is None:
+        #         continue
+        #     self.options[option] = value
+
+        # Replaced with:
+        self.options = model.options
+        # This is not a valid celery task option but
+        # is included to avoid breaking everything
+        self.options.pop('one_off', None)
+        ##################################
 
         self.total_run_count = model.total_run_count
         self.enabled = model.enabled
@@ -209,10 +217,13 @@ class ModelEntry(ScheduleEntry):
             {model_field + "_id": model_schedule.id},  # type: ignore [dict-item]
             args=dumps(args or []),
             kwargs=dumps(kwargs or {}),
-            **cls._unpack_options(**options or {}),
+            #############################################
+            #**cls._unpack_options(**options or {}),
+            # We should be able to pass options directly as a dict now
+            celery_options=options 
         )
         return entry
-
+    """
     @classmethod
     def _unpack_options(  # noqa: PLR0913
         cls,
@@ -240,7 +251,7 @@ class ModelEntry(ScheduleEntry):
                 raise ValueError("expires value error")  # noqa: EM101, TRY003
             data["expires"] = expires
         return data
-
+    """
 
 class DatabaseScheduler(Scheduler):
     Entry = ModelEntry
