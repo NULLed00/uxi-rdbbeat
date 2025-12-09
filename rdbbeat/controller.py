@@ -44,8 +44,9 @@ def schedule_task(
         name=scheduled_task.name,
         task=scheduled_task.task,
         kwargs=json.dumps(kwargs),
-        celery_options=celery_options,
     )
+
+    task.celery_options=celery_options
     session.add(task)
 
     return task

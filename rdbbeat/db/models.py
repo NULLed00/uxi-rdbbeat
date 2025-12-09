@@ -234,7 +234,7 @@ class PeriodicTask(Base, ModelMixin):
         return self.celery_options.get('one_off', False)
 
 
-    def update_celery_options(self, new_options):
+    def update_celery_options(self, new_options:dict):
 
         # Deserialize the original options
         original_options = self.celery_options
