@@ -88,7 +88,7 @@ class ModelEntry(ScheduleEntry):
     def __get_kwargs_from_name(self):
 
         if match := re.match(
-            r"(?P<class_module>[^\.]*)\.(?P<class_file>[^\.]*)\.(?P<class_name>[^\.]*)(\.(?P<model>[^\.]*)(\.(?P<data>[0-9]*))?)?",
+            r"(?P<class_module>[^\.]*)(\.(?P<model>[^\.]*)(\.(?P<data>[0-9]*))?)?",
             self.name
         ):
 
