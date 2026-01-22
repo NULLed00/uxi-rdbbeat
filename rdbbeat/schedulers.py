@@ -93,12 +93,13 @@ class ModelEntry(ScheduleEntry):
         ):
 
             matches = match.groupdict()
-            
-            # If we have a model but no data then the model is the data
+
+            # If we have a model but no data then the model *is* the data
             if matches.get('model') and not matches.get('data'):
-                matches['data'] = mnatches.pop('model')
+                matches['data'] = matches.pop('model')
 
             self.kwargs.update(matches)
+            print(self.kwargs)
 
 
     def _disable(self, model: schedules.schedule) -> None:
