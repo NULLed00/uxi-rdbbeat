@@ -2,8 +2,9 @@
 # Copyright (c) 2023 Hewlett Packard Enterprise Development LP
 # MIT License
 
-import datetime as dt
+import re
 import logging
+import datetime as dt
 from collections.abc import Callable
 from multiprocessing.util import Finalize
 from typing import Any
@@ -55,6 +56,7 @@ class ModelEntry(ScheduleEntry):
         self.schedule = model.schedule
         self.args = loads(model.args or "[]")
         self.kwargs = loads(model.kwargs or "{}")
+        self.__get_kwargs_from_name()
 
         logger.debug(f"schedule: {self.schedule}")  # noqa: G004
 
@@ -83,6 +85,22 @@ class ModelEntry(ScheduleEntry):
         # update tzinfo since it may not be present
         self.last_run_at = self.last_run_at.replace(tzinfo=self.app.timezone)
 
+    def __get_kwargs_from_name(self):
+
+        if match := re.match(
+            r"(?P<class_module>[^\.]*)\.(?P<class_file>[^\.]*)\.(?P<class_name>[^\.]*)(\.(?P<model>[^\.]*)(\.(?P<data>[0-9]*))?)?",
+            self.name
+        ):
+
+            matches = match.groupdict()
+            
+            # If we have a model but no data then the model is the data
+            if matches.get('model') and not matches.get('data'):
+                matches['data'] = mnatches.pop('model')
+
+            self.kwargs.update(matches)
+
+
     def _disable(self, model: schedules.schedule) -> None:
         model.no_changes = True
         self.model.enabled = self.enabled = model.enabled = False
@@ -110,6 +128,7 @@ class ModelEntry(ScheduleEntry):
                 return schedules.schedstate(False, delay)  # noqa: FBT003
 
         # ONE OFF TASK: Disable one off tasks after they've ran once
+        # TODO: REMOVE the task instead + make sure we are not popping one_off in __init__
         if self.model.one_off and self.model.enabled and self.model.total_run_count > 0:
             self.model.enabled = False  # disable
             self.model.total_run_count = 0  # Reset
@@ -143,14 +162,16 @@ class ModelEntry(ScheduleEntry):
         # Object may not be synchronized, so only
         # change the fields we care about.
         with self.session_scope() as session:
-            obj = session.query(PeriodicTask).get(self.model.id)
 
-            for field in self.save_fields:
-                setattr(obj, field, getattr(self.model, field))
-            for field in fields:
-                setattr(obj, field, getattr(self.model, field))
-            session.add(obj)
-            session.commit()
+            # A task may remove itself before it finishes
+            if obj := session.query(PeriodicTask).get(self.model.id):
+
+                for field in self.save_fields:
+                    setattr(obj, field, getattr(self.model, field))
+                for field in fields:
+                    setattr(obj, field, getattr(self.model, field))
+                session.add(obj)
+                session.commit()
 
     @classmethod
     def to_model_schedule(  # noqa: D102
