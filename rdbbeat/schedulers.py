@@ -398,7 +398,7 @@ class DatabaseScheduler(Scheduler):
                 {
                     "task": "celery.backend_cleanup",
                     "schedule": schedules.crontab("0", "4", "*"),
-                    "options": {"expires": 12 * 3600},
+                    #"options": {"expires": 12 * 3600},
                 },
             )
         self.update_from_dict(entries)
