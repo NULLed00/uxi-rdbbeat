@@ -227,6 +227,7 @@ class PeriodicTask(Base, ModelMixin):
     @property
     def one_off(self):
         """
+        TODO: Make one_off its own column since it is not a real celery_option
         Since one_off is now included in celery_options we need to create a property as if it were a column
         """
 

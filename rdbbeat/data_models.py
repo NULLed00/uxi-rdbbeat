@@ -46,11 +46,11 @@ class Schedule(BaseModel):
 
     @field_validator("day_of_month")
     def day_of_month_validation(cls, v: str) -> str:  # noqa: D102, N805
-        return cls.validate(v, 0, 32, "Day of the month value must range between 1 and 31", "Day of the month")
+        return cls.validate(v, 0, 31, "Day of the month value must range between 1 and 31", "Day of the month")
 
     @field_validator("month_of_year")
     def month_of_year_validation(cls, v: str) -> str:  # noqa: D102, N805
-        return cls.validate(v, 0, 13, "Month of year value must range between 0 and 12", "Month of the year")
+        return cls.validate(v, 0, 12, "Month of year value must range between 0 and 12", "Month of the year")
 
 
 class ScheduledTask(BaseModel):

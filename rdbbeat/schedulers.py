@@ -88,7 +88,7 @@ class ModelEntry(ScheduleEntry):
     def __get_kwargs_from_name(self):
 
         if match := re.match(
-            r"(?P<module_name>[^\.]*)(\.(?P<model>[^\.]*)(\.(?P<data>[0-9]*))?)?",
+            r"(?P<module_name>[^\.]*)(\.(?P<model>[^\.]*)(\.(?P<data>[0-9]*)(\.(?P<extra_name>[^\.]*))?)?)?",
             self.name
         ):
 
@@ -115,8 +115,8 @@ class ModelEntry(ScheduleEntry):
 
     def is_due(self) -> bool:  # noqa: D102
         if not self.model.enabled:
-            # 5 second delay for re-enable.
-            return schedules.schedstate(False, 5.0)  # noqa: FBT003
+            # 5H delay for re-enable.
+            return schedules.schedstate(False, 3600*5)  # noqa: FBT003
 
         # START DATE: only run after the `start_time`, if one exists.
         if self.model.start_time is not None:
