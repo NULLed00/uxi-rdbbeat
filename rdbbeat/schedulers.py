@@ -96,7 +96,6 @@ class ModelEntry(ScheduleEntry):
                 matches['data'] = matches.pop('model')
 
             self.kwargs.update(matches)
-            print(self.kwargs)
 
 
     def _disable(self, model: schedules.schedule) -> None:

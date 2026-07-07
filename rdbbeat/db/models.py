@@ -164,13 +164,13 @@ class PeriodicTask(Base, ModelMixin):
 
     # Execute only once
     enabled: sa.Column = sa.Column(sa.Boolean(), default=True)
-    last_run_at = sa.Column(sa.DateTime(timezone=True))
     total_run_count = sa.Column(sa.Integer(), nullable=False, default=0)
     # Change the time
+    start_time = sa.Column(sa.DateTime(timezone=True))
     date_changed = sa.Column(sa.DateTime(timezone=True), default=func.now(), onupdate=func.now())
     description = sa.Column(sa.Text(), default="")
 
-    start_time = sa.Column(
+    last_run_at = sa.Column(
         sa.DateTime(timezone=True),
         default=lambda: dt.datetime.now(dt.timezone.utc),   # UTC-anchored
     )
