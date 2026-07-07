@@ -78,12 +78,9 @@ class ModelEntry(ScheduleEntry):
         self.total_run_count = model.total_run_count
         self.enabled = model.enabled
 
-        if not model.last_run_at:
-            model.last_run_at = self._default_now()
-        self.last_run_at = model.last_run_at
-
+        last_run_at = model.last_run_at or self._default_now()
         # update tzinfo since it may not be present
-        self.last_run_at = self.last_run_at.replace(tzinfo=self.app.timezone)
+        self.last_run_at = last_run_at.replace(tzinfo=self.app.timezone)
 
     def __get_kwargs_from_name(self):
 
